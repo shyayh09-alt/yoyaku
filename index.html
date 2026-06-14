@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>保育参加 予約フォーム</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>西原りとるぱんぷきんず<br>保育参加予約</h1>
+    <form id="reservationForm">
+      <div class="form-group">
+        <label>お子様の氏名</label>
+        <input type="text" id="name" required>
+      </div>
+      
+      <div class="form-group">
+        <label>クラス選択</label>
+        <select id="className" required>
+          <option value="">選択してください</option>
+          <option value="ひよこ組">ひよこ組</option>
+          <option value="うさぎ組">うさぎ組</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>希望日選択</label>
+        <input type="date" id="date" required>
+      </div>
+
+      <div class="form-group">
+        <label>時間選択</label>
+        <select id="time" required>
+          <option value="" data-lunch="false">選択してください</option>
+          <option value="9:00-11:00" data-lunch="false">9:00-11:00</option>
+          <option value="10:00-13:00" data-lunch="true">10:00-13:00（昼食またぎ）</option>
+        </select>
+      </div>
+
+      <!-- 時間選択によって表示・非表示が切り替わる -->
+      <div class="form-group" id="lunchGroup" style="display: none;">
+        <label>昼食の有無</label>
+        <label><input type="radio" name="lunch" value="あり"> あり</label>
+        <label><input type="radio" name="lunch" value="なし" checked> なし</label>
+      </div>
+
+      <div class="form-group">
+        <label>メールアドレス</label>
+        <input type="email" id="email" required>
+      </div>
+
+      <button type="submit" class="btn">予約する</button>
+    </form>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
