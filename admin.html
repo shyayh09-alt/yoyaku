@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>保育参加 管理画面</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- ドラッグ＆ドロップ用ライブラリ -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+</head>
+<body class="admin-body">
+
+  <!-- ログイン画面 -->
+  <div id="loginScreen" class="container">
+    <h2>管理者ログイン</h2>
+    <input type="password" id="adminPassword" placeholder="パスワード">
+    <button class="btn" onclick="login()">ログイン</button>
+  </div>
+
+  <!-- 管理画面メイン -->
+  <div id="adminScreen" class="admin-container" style="display: none;">
+    <!-- 左画面（設定関係：印刷時は非表示） -->
+    <div class="left-panel no-print">
+      <h3>各種設定</h3>
+      
+      <div class="setting-block">
+        <h4>クラス設定 (ドラッグで並び替え)</h4>
+        <ul id="classList" class="drag-list">
+          <li>ひよこ組 <button>削除</button></li>
+          <li>うさぎ組 <button>削除</button></li>
+          <li>きりん組 <button>削除</button></li>
+        </ul>
+        <input type="text" placeholder="新規クラス名"> <button class="btn-small">追加</button>
+      </div>
+
+      <!-- その他の設定項目群（UIのモックアップ） -->
+      <div class="setting-block">
+        <h4>締切設定</h4>
+        <select><option>リセット</option><option>○日前締切</option><option>日時指定締切</option></select>
+      </div>
+    </div>
+
+    <!-- 右画面（予約一覧：印刷対象） -->
+    <div class="right-panel">
+      <h3>予約一覧</h3>
+      <div class="no-print">
+        <button class="btn-small" onclick="window.print()">一覧を印刷する</button>
+        <button class="btn-small danger">選択削除</button>
+      </div>
+      <table class="reservation-table">
+        <thead>
+          <tr>
+            <th>クラス</th>
+            <th>希望日</th>
+            <th>時間</th>
+            <th>氏名</th>
+            <th>昼食</th>
+          </tr>
+        </thead>
+        <tbody id="reservationTableBody">
+          <!-- GASから取得したデータが入る想定 -->
+          <tr><td>ひよこ組</td><td>2026/07/01</td><td>10:00-13:00</td><td>西原 太郎</td><td>あり</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
