@@ -1,0 +1,123 @@
+:root {
+  --primary-color: #7b8d74; /* 落ち着いたグリーン */
+  --bg-color: #f9f8f6;      /* 温かみのあるオフホワイト */
+  --text-color: #4a4a4a;
+  --border-color: #e0dcd3;
+}
+
+body {
+  font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 500px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+h1, h2, h3 {
+  color: var(--primary-color);
+  text-align: center;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+input[type="text"], input[type="email"], input[type="date"], input[type="password"], select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.btn {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--primary-color);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.btn:hover { background-color: #65755e; }
+.btn-small { padding: 5px 10px; cursor: pointer; }
+.danger { background-color: #d9534f; color: white; border: none; }
+
+/* 管理画面レイアウト */
+.admin-container {
+  display: flex;
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.left-panel {
+  flex: 1;
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.right-panel {
+  flex: 2;
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.setting-block {
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.drag-list {
+  list-style: none;
+  padding: 0;
+}
+
+.drag-list li {
+  padding: 10px;
+  background: var(--bg-color);
+  margin-bottom: 5px;
+  cursor: grab;
+  display: flex;
+  justify-content: space-between;
+  border: 1px solid var(--border-color);
+}
+
+.reservation-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.reservation-table th, .reservation-table td {
+  border: 1px solid var(--border-color);
+  padding: 8px;
+  text-align: left;
+}
+
+/* 印刷時のスタイル */
+@media print {
+  body { background-color: #fff; }
+  .no-print { display: none !important; }
+  .right-panel { flex: none; width: 100%; padding: 0; box-shadow: none; }
+}
