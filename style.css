@@ -4,7 +4,7 @@
   --accent: #8c7b6e;        /* ココアベージュ */
   --bg-light: #faf8f5;      /* 温かみのあるオフホワイト */
   --text-main: #3e3a35;     /* 深みのあるチャコール */
-  --border-color: #eedcc;   /* 柔らかな境界線 */
+  --border-color: #eedcc2;  /* 柔らかな境界線 */
 }
 
 body {
@@ -162,7 +162,7 @@ input:focus, select:focus {
 .btn-print { background: #4682b4; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-right: 5px; }
 
 /* ==========================================
-   要件：予約一覧のみ印刷できるようにする制御
+   予約一覧のみ印刷できるようにする制御
    ========================================== */
 @media print {
   body { background: #ffffff !important; padding: 0 !important; }
