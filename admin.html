@@ -2,68 +2,141 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>保育参加 管理画面</title>
+  <title>保育参加予約 システム管理画面</title>
   <link rel="stylesheet" href="style.css">
-  <!-- ドラッグ＆ドロップ用ライブラリ -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 </head>
 <body class="admin-body">
 
-  <!-- ログイン画面 -->
-  <div id="loginScreen" class="container">
-    <h2>管理者ログイン</h2>
-    <input type="password" id="adminPassword" placeholder="パスワード">
-    <button class="btn" onclick="login()">ログイン</button>
+  <div id="loginScreen" class="admin-login-box">
+    <h2>システム管理者ログイン</h2>
+    <p style="text-align:center; font-size:11px; color:#7a7a7a; margin-bottom:15px;">初期PWは Code.gs 内をご確認ください</p>
+    <div class="form-group">
+      <input type="password" id="adminPassword" placeholder="パスワードを入力してください">
+    </div>
+    <button class="btn-submit" onclick="login()">認証する</button>
   </div>
 
-  <!-- 管理画面メイン -->
-  <div id="adminScreen" class="admin-container" style="display: none;">
-    <!-- 左画面（設定関係：印刷時は非表示） -->
+  <div id="adminScreen" class="admin-layout" style="display: none;">
+    
     <div class="left-panel no-print">
-      <h3>各種設定</h3>
+      <h2>各種システム設定</h2>
       
-      <div class="setting-block">
-        <h4>クラス設定 (ドラッグで並び替え)</h4>
-        <ul id="classList" class="drag-list">
-          <li>ひよこ組 <button>削除</button></li>
-          <li>うさぎ組 <button>削除</button></li>
-          <li>きりん組 <button>削除</button></li>
-        </ul>
-        <input type="text" placeholder="新規クラス名"> <button class="btn-small">追加</button>
+      <div class="setting-card">
+        <h3>パスワード設定</h3>
+        <input type="password" id="setCryptoPassword" placeholder="新しいパスワードを入力">
+        <div class="btn-row">
+          <button class="btn-action save" onclick="saveSingleSetting('password', 'setCryptoPassword')">保存</button>
+          <button class="btn-action delete" onclick="clearSingleSetting('password', 'setCryptoPassword')">削除</button>
+        </div>
       </div>
 
-      <!-- その他の設定項目群（UIのモックアップ） -->
-      <div class="setting-block">
-        <h4>締切設定</h4>
-        <select><option>リセット</option><option>○日前締切</option><option>日時指定締切</option></select>
+      <div class="setting-card">
+        <h3>管理者メールアドレス設定</h3>
+        <input type="email" id="setAdminEmail" placeholder="admin@example.com">
+        <div class="btn-row">
+          <button class="btn-action save" onclick="saveSingleSetting('admin_email', 'setAdminEmail')">保存</button>
+          <button class="btn-action delete" onclick="clearSingleSetting('admin_email', 'setAdminEmail')">削除</button>
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <h3>締切設定選択</h3>
+        <select id="setDeadlineType">
+          <option value="reset">リセット</option>
+          <option value="days_before">○日前締切</option>
+          <option value="date_spec">日時指定締切</option>
+        </select>
+        <input type="text" id="setDeadlineValue" placeholder="日数や日時を入力してください" style="margin-top:5px;">
+        <div class="btn-row">
+          <button class="btn-action save" onclick="saveDeadlineSettings()">保存</button>
+          <button class="btn-action delete" onclick="clearDeadlineSettings()">削除</button>
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <h3>クラス設定 (ドラッグで順番変更)</h3>
+        <ul id="classList" class="drag-container"></ul>
+        <div class="input-append">
+          <input type="text" id="newClassName" placeholder="新規クラス名">
+          <button onclick="addClassToList()">追加</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn-action save" onclick="saveClasses()">並び順を保存</button>
+          <button class="btn-action bulk-delete" onclick="clearAllSections('clearClasses')">一括削除</button>
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <h3>希望日設定 (個別設定・一括期間設定)</h3>
+        <div id="dateList" class="item-badge-container"></div>
+        <div class="input-append">
+          <input type="date" id="newDateValue">
+          <button onclick="addSingleDate()">個別追加</button>
+        </div>
+        <div class="bulk-date-zone" style="margin-top:8px; padding:8px; background:#f0ede4; border-radius:4px;">
+          <span style="font-size:11px; font-weight:bold; display:block; margin-bottom:3px;">一括期間指定設定</span>
+          <input type="date" id="bulkDateStart" style="width:45%; display:inline-block;"> 〜 
+          <input type="date" id="bulkDateEnd" style="width:45%; display:inline-block;">
+          <button class="btn-action save" style="width:100%; margin-top:5px;" onclick="addBulkDates()">一括生成</button>
+        </div>
+        <div class="btn-row" style="margin-top:8px;">
+          <button class="btn-action save" onclick="saveDates()">設定を保存</button>
+          <button class="btn-action bulk-delete" onclick="clearAllSections('clearDates')">一括削除</button>
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <h3>時間設定 ＆ 昼食有無連動</h3>
+        <div id="timeList" class="item-list-block"></div>
+        <div class="input-row-multi" style="margin-top:5px; display:flex; align-items:center; gap:5px;">
+          <input type="text" id="newTimeValue" placeholder="例: 10:00-13:00" style="width:50%;">
+          <label style="font-size:11px; white-space:nowrap;"><input type="checkbox" id="newTimeLunch"> 昼食あり</label>
+          <button onclick="addTimeToBlock()" style="padding:5px; font-size:11px;">追加</button>
+        </div>
+        <div class="btn-row" style="margin-top:8px;">
+          <button class="btn-action save" onclick="saveTimes()">設定を保存</button>
+          <button class="btn-action bulk-delete" onclick="clearAllSections('clearTimes')">一括削除</button>
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <h3>定員設定</h3>
+        <input type="number" id="setCapacityLimit" placeholder="上限人数を入力">
+        <div class="btn-row">
+          <button class="btn-action save" onclick="saveSingleSetting('capacity', 'setCapacityLimit')">保存</button>
+          <button class="btn-action delete" onclick="clearSingleSetting('capacity', 'setCapacityLimit')">削除</button>
+        </div>
       </div>
     </div>
-
-    <!-- 右画面（予約一覧：印刷対象） -->
+    
     <div class="right-panel">
-      <h3>予約一覧</h3>
-      <div class="no-print">
-        <button class="btn-small" onclick="window.print()">一覧を印刷する</button>
-        <button class="btn-small danger">選択削除</button>
+      <div class="panel-header">
+        <h2>保育参加 予約一覧</h2>
+        <div class="action-bar no-print">
+          <button class="btn-print" onclick="window.print()">予約一覧のみ印刷する</button>
+          <button class="btn-action bulk-delete" onclick="clearAllReservations()">予約一覧を一括削除</button>
+        </div>
       </div>
-      <table class="reservation-table">
+      
+      <table class="data-table">
         <thead>
           <tr>
             <th>クラス</th>
             <th>希望日</th>
             <th>時間</th>
-            <th>氏名</th>
+            <th>お子様の氏名</th>
             <th>昼食</th>
+            <th>メールアドレス</th>
+            <th class="no-print">操作</th>
           </tr>
         </thead>
-        <tbody id="reservationTableBody">
-          <!-- GASから取得したデータが入る想定 -->
-          <tr><td>ひよこ組</td><td>2026/07/01</td><td>10:00-13:00</td><td>西原 太郎</td><td>あり</td></tr>
-        </tbody>
+        <tbody id="adminReservationTableBody">
+          </tbody>
       </table>
     </div>
+    
   </div>
-
   <script src="app.js"></script>
 </body>
 </html>
