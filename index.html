@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>西原りとるぱんぷきんず 保育参加予約</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="parent-container">
+    <header class="form-header">
+      <h1>保育参加 オンライン予約</h1>
+      <p class="garden-name">西原りとるぱんぷきんず</p>
+    </header>
+    
+    <div class="intro-box">
+      <p>保護者の皆様へ</p>
+      <p>日頃より園の保育活動にご理解とご協力をいただきありがとうございます。今年度の保育参加のご予約を承ります。下記の必要項目をご入力の上、「予約を確定する」ボタンを押してください。</p>
+    </div>
+
+    <form id="reservationForm">
+      <div class="form-group">
+        <label for="name">お子様の氏名 <span class="required">必須</span></label>
+        <input type="text" id="name" placeholder="例：パンプキン 太郎" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="className">クラス選択 <span class="required">必須</span></label>
+        <select id="className" required>
+          <option value="">選択してください</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="date">希望日選択 <span class="required">必須</span></label>
+        <select id="date" required>
+          <option value="">選択してください</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="time">時間選択 <span class="required">必須</span></label>
+        <select id="time" required>
+          <option value="">選択してください</option>
+        </select>
+      </div>
+
+      <div class="form-group toggle-group" id="lunchGroup" style="display: none;">
+        <label>昼食の有無 <span class="required">必須</span></label>
+        <div class="radio-tile-group">
+          <label class="radio-label">
+            <input type="radio" name="lunch" value="あり"> <span>昼食あり</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="lunch" value="なし" checked> <span>昼食なし</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">メールアドレス <span class="required">必須</span></label>
+        <input type="email" id="email" placeholder="example@domain.com" required>
+        <small class="help-block">※予約完了後、このアドレスに自動で通知メールが届きます。</small>
+      </div>
+
+      <button type="submit" id="submitBtn" class="btn-submit">予約を確定する</button>
+    </form>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
