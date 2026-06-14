@@ -1,0 +1,281 @@
+// app.js
+const GAS_URL = "https://script.google.com/macros/s/xxxxxxxxx/exec"; // ★★★【ここにデプロイしたGASのURLを貼り付け】★★★
+const SESSION_TIMEOUT_MINS = 15; // ログイン有効時間（15分）
+
+let state = { classes: [], dates: [], times: [] };
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (document.getElementById("reservationForm")) {
+    initParentForm();
+  }
+  if (document.getElementById("adminScreen")) {
+    checkAdminSession();
+  }
+});
+
+/* ==========================================
+   A. 保護者用 予約フォーム関連ロジック
+   ========================================== */
+async function initParentForm() {
+  try {
+    const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "getFormData" }) });
+    const r = await res.json();
+    if (r.status === "success") {
+      // クラス反映
+      const classSelect = document.getElementById("className");
+      r.classes.forEach(c => classSelect.add(new Option(c, c)));
+      
+      // 希望日反映
+      const dateSelect = document.getElementById("date");
+      r.dates.forEach(d => {
+        const dStr = new Date(d).toLocaleDateString('ja-JP', {year:'numeric', month:'2-digit', day:'2-digit'});
+        dateSelect.add(new Option(dStr, dStr));
+      });
+
+      // 時間帯反映
+      const timeSelect = document.getElementById("time");
+      state.times = r.times;
+      r.times.forEach(t => timeSelect.add(new Option(t.time, t.time)));
+
+      // 【要件】設定した時間を選択したら昼食の有無が選べるように
+      timeSelect.addEventListener("change", () => {
+        const matched = state.times.find(t => t.time === timeSelect.value);
+        const lunchGroup = document.getElementById("lunchGroup");
+        if (matched && matched.lunch === true) {
+          lunchGroup.style.display = "block";
+        } else {
+          lunchGroup.style.display = "none";
+          document.querySelector('input[name="lunch"][value="なし"]').checked = true;
+        }
+      });
+    }
+  } catch (e) { alert("マスタデータの読み込みに失敗しました。"); }
+
+  // 予約送信イベント
+  document.getElementById("reservationForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById("submitBtn");
+    btn.disabled = true; btn.innerText = "送信中...";
+
+    const payload = {
+      action: "reserve",
+      data: {
+        name: document.getElementById("name").value,
+        className: document.getElementById("className").value,
+        date: document.getElementById("date").value,
+        time: document.getElementById("time").value,
+        lunch: document.querySelector('input[name="lunch"]:checked').value,
+        email: document.getElementById("email").value
+      }
+    };
+
+    try {
+      const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
+      if ((await res.json()).status === "success") {
+        alert("予約が完了しました。\n確認用の自動送信メールをお送りしましたのでご確認ください。");
+        document.getElementById("reservationForm").reset();
+        document.getElementById("lunchGroup").style.display = "none";
+      } else { alert("エラーが発生しました。"); }
+    } catch (err) { alert("通信に失敗しました。"); }
+    btn.disabled = false; btn.innerText = "予約を確定する";
+  });
+}
+
+/* ==========================================
+   B. 管理画面 ログイン ＆ セッション管理
+   ========================================== */
+async function login() {
+  const pw = document.getElementById("adminPassword").value;
+  try {
+    const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "login", password: pw }) });
+    const r = await res.json();
+    if (r.status === "success") {
+      // 【要件】ログインしたら数分（15分）はパスワードを求められないように
+      const expire = new Date().getTime() + (SESSION_TIMEOUT_MINS * 60 * 1000);
+      localStorage.setItem("admin_session_expire", expire);
+      showAdminMain();
+    } else { alert(r.message); }
+  } catch (e) { alert("認証エラー"); }
+}
+
+function checkAdminSession() {
+  const expire = localStorage.getItem("admin_session_expire");
+  if (expire && new Date().getTime() < parseInt(expire)) {
+    showAdminMain(); // セッション有効なら直接表示
+  } else {
+    document.getElementById("loginScreen").style.display = "block";
+    document.getElementById("adminScreen").style.display = "none";
+  }
+}
+
+function showAdminMain() {
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("adminScreen").style.display = "flex";
+  loadAdminData();
+}
+
+/* ==========================================
+   C. 各種設定欄の個別保存・削除・一括削除の通信処理
+   ========================================== */
+async function loadAdminData() {
+  try {
+    const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "getAdminData" }) });
+    const r = await res.json();
+    if (r.status === "success") {
+      // 各テキストフィールドの復元
+      if(r.settings.admin_email) document.getElementById("setAdminEmail").value = r.settings.admin_email;
+      if(r.settings.deadline_type) document.getElementById("setDeadlineType").value = r.settings.deadline_type;
+      if(r.settings.deadline_value) document.getElementById("setDeadlineValue").value = r.settings.deadline_value;
+      if(r.settings.capacity) document.getElementById("setCapacityLimit").value = r.settings.capacity;
+
+      // 配列データの復元・レンダリング
+      state.classes = r.classes.map(c => c.name); renderClasses();
+      state.dates = r.dates.map(d => new Date(d).toISOString().split('T')[0]); renderDates();
+      state.times = r.times; renderTimes();
+
+      // 予約一覧の描画（GAS側でソート済み）
+      renderReservationsTable(r.reservations);
+    }
+  } catch (e) { alert("管理データ同期エラー"); }
+}
+
+// 1, 2, 8. 単一項目（パスワード、メール、定員）の保存・クリア
+async function saveSingleSetting(key, inputId) {
+  const val = document.getElementById(inputId).value;
+  const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "saveSettings", data: { [key]: val } }) });
+  if((await res.json()).status === "success") alert("保存しました。");
+}
+async function clearSingleSetting(key, inputId) {
+  document.getElementById(inputId).value = "";
+  await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "saveSettings", data: { [key]: "" } }) });
+  alert("削除しました。");
+}
+
+// 3. 締切設定の保存・クリア
+async function saveDeadlineSettings() {
+  const type = document.getElementById("setDeadlineType").value;
+  const val = document.getElementById("setDeadlineValue").value;
+  await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "saveSettings", data: { deadline_type: type, deadline_value: val } }) });
+  alert("締切設定を保存しました。");
+}
+function clearDeadlineSettings() {
+  document.getElementById("setDeadlineType").value = "reset";
+  document.getElementById("setDeadlineValue").value = "";
+  saveDeadlineSettings();
+}
+
+// 4. クラス設定（ドラッグ並び替え連動）
+function renderClasses() {
+  const ul = document.getElementById("classList"); ul.innerHTML = "";
+  state.classes.forEach((c, idx) => {
+    ul.innerHTML += `<li data-name="${c}">${c} <button onclick="removeClass(${idx})">削除</button></li>`;
+  });
+  new Sortable(ul, {
+    animation: 150,
+    onEnd: () => {
+      const updated = [];
+      ul.querySelectorAll("li").forEach(li => updated.push(li.getAttribute("data-name")));
+      state.classes = updated; // ドラッグ終了時に配列順序を追従
+    }
+  });
+}
+function addClassToList() {
+  const name = document.getElementById("newClassName").value.trim();
+  if(name) { state.classes.push(name); renderClasses(); document.getElementById("newClassName").value = ""; }
+}
+function removeClass(idx) { state.classes.splice(idx, 1); renderClasses(); }
+async function saveClasses() {
+  await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "saveClasses", data: state.classes }) });
+  alert("クラスの並び順を保存しました。");
+}
+
+// 5. 希望日設定（個別・期間一括）
+function renderDates() {
+  const container = document.getElementById("dateList"); container.innerHTML = "";
+  state.dates.forEach((d, idx) => {
+    container.innerHTML += `<div class="badge">${d} <span onclick="removeDate(${idx})">&times;</span></div>`;
+  });
+}
+function addSingleDate() {
+  const d = document.getElementById("newDateValue").value;
+  if(d && !state.dates.includes(d)) { state.dates.push(d); state.dates.sort(); renderDates(); }
+}
+function addBulkDates() {
+  const start = new Date(document.getElementById("bulkDateStart").value);
+  const end = new Date(document.getElementById("bulkDateEnd").value);
+  if(!start || !end || start > end) return alert("正しい期間を入力してください。");
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const s = d.toISOString().split('T')[0];
+    if(!state.dates.includes(s)) state.dates.push(s);
+  }
+  state.dates.sort(); renderDates();
+}
+function removeDate(idx) { state.dates.splice(idx, 1); renderDates(); }
+async function saveDates() {
+  await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "saveDates", data: state.dates }) });
+  alert("希望日設定を保存しました。");
+}
+
+// 6, 7. 時間設定 ＆ 昼食有無
+function renderTimes() {
+  const container = document.getElementById("timeList"); container.innerHTML = "";
+  state.times.forEach((t, idx) => {
+    container.innerHTML += `<div class="badge">${t.time} [昼食:${t.lunch?'可':'不可'}] <span onclick="removeTime(${idx})">&times;</span></div>`;
+  });
+}
+function addTimeToBlock() {
+  const val = document.getElementById("newTimeValue").value.trim();
+  const lunch = document.getElementById("newTimeLunch").checked;
+  if(val) { state.times.push({ time: val, lunch: lunch }); renderTimes(); document.getElementById("newTimeValue").value = ""; document.getElementById("newTimeLunch").checked = false; }
+}
+function removeTime(idx) { state.times.splice(idx, 1); renderTimes(); }
+async function saveTimes() {
+  await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "saveTimes", data: state.times }) });
+  alert("時間・昼食連動設定を保存しました。");
+}
+
+// マスタデータ系の一括削除共通処理
+async function clearAllSections(actionName) {
+  if(confirm("この項目の設定データをすべて一括削除しますか？")) {
+    const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: actionName }) });
+    if((await res.json()).status === "success") { alert("一括削除しました。"); loadAdminData(); }
+  }
+}
+
+/* ==========================================
+   D. 予約一覧データの描画・削除
+   ========================================== */
+function renderReservationsTable(data) {
+  const tbody = document.getElementById("adminReservationTableBody"); tbody.innerHTML = "";
+  if(data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#888;">現在、予約データはありません。</td></tr>`;
+    return;
+  }
+  data.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.className}</td>
+      <td>${row.date}</td>
+      <td>${row.time}</td>
+      <td><strong>${row.name}</strong></td>
+      <td>${row.lunch}</td>
+      <td>${row.email}</td>
+      <td class="no-print"><button class="btn-action delete" style="padding:2px 6px;" onclick="deleteReservation('${row.id}')">削除</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function deleteReservation(id) {
+  if(confirm("この予約データを削除しますか？")) {
+    const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "deleteReservation", id: id }) });
+    if((await res.json()).status === "success") { alert("削除しました。"); loadAdminData(); }
+  }
+}
+
+async function clearAllReservations() {
+  if(confirm("【警告】すべての保護者予約データが一括削除されます。本当によろしいですか？")) {
+    const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "clearReservations" }) });
+    if((await res.json()).status === "success") { alert("すべての予約データを一括削除しました。"); loadAdminData(); }
+  }
+}
