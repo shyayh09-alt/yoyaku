@@ -1,5 +1,5 @@
 // app.js
-const GAS_URL = "https://script.google.com/macros/s/xxxxxxxxx/exec"; // ★★★【ここにデプロイしたGASのURLを貼り付け】★★★
+const GAS_URL = "https://script.google.com/macros/s/xxxxxxxxx/exec"; // ★★★【https://script.google.com/macros/s/AKfycbyXuJAWNCATfgec_jMbPDdFeZxUfRnbEDlwqjgV6PLkJlPO-jkLHS43kkmwC72ONM51/exec】★★★
 const SESSION_TIMEOUT_MINS = 15; // ログイン有効時間（15分）
 
 let state = { classes: [], dates: [], times: [] };
